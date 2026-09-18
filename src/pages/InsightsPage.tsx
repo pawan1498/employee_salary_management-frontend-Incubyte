@@ -8,13 +8,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from "@mui/material";
 import { getInsights } from "../api/insights";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
+import { FilterSelect } from "../components/FilterSelect";
+import { COUNTRIES, DEPARTMENTS } from "../constants/filters";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/StatCard";
@@ -38,8 +39,8 @@ export function InsightsPage() {
 
       try {
         const result = await getInsights({
-          country: country.trim(),
-          department: department.trim(),
+          country,
+          department,
         });
         if (!cancelled) {
           setInsights(result.data);
@@ -70,19 +71,17 @@ export function InsightsPage() {
       />
 
       <FilterBar>
-        <TextField
+        <FilterSelect
           label="Country"
-          size="small"
           value={country}
-          onChange={(event) => setCountry(event.target.value)}
-          sx={{ minWidth: 200 }}
+          options={COUNTRIES}
+          onChange={setCountry}
         />
-        <TextField
+        <FilterSelect
           label="Department"
-          size="small"
           value={department}
-          onChange={(event) => setDepartment(event.target.value)}
-          sx={{ minWidth: 200 }}
+          options={DEPARTMENTS}
+          onChange={setDepartment}
         />
       </FilterBar>
 

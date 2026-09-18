@@ -18,6 +18,8 @@ import { getEmployees } from "../api/employees";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
+import { FilterSelect } from "../components/FilterSelect";
+import { COUNTRIES, DEPARTMENTS } from "../constants/filters";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
@@ -56,8 +58,8 @@ export function EmployeesPage() {
       try {
         const result = await getEmployees({
           q,
-          country: country.trim(),
-          department: department.trim(),
+          country,
+          department,
           page,
           per_page: PER_PAGE,
         });
@@ -112,19 +114,17 @@ export function EmployeesPage() {
           onChange={(event) => setSearchInput(event.target.value)}
           sx={{ minWidth: 240 }}
         />
-        <TextField
+        <FilterSelect
           label="Country"
-          size="small"
           value={country}
-          onChange={(event) => handleFilterChange(setCountry, event.target.value)}
-          sx={{ minWidth: 200 }}
+          options={COUNTRIES}
+          onChange={(value) => handleFilterChange(setCountry, value)}
         />
-        <TextField
+        <FilterSelect
           label="Department"
-          size="small"
           value={department}
-          onChange={(event) => handleFilterChange(setDepartment, event.target.value)}
-          sx={{ minWidth: 200 }}
+          options={DEPARTMENTS}
+          onChange={(value) => handleFilterChange(setDepartment, value)}
         />
       </FilterBar>
 
