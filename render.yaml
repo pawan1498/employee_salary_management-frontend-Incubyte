@@ -6,4 +6,4 @@ services:
     startCommand: npm start
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://employee-salary-management-incubyte.onrender.com
