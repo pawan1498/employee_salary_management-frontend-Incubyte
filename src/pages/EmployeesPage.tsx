@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Box,
+  Chip,
   Link,
   Paper,
   Table,
@@ -16,7 +17,9 @@ import {
 import { getEmployees } from "../api/employees";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
+import { FilterBar } from "../components/FilterBar";
 import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
 import { formatMoney } from "../format";
 import type { EmployeeListResponse } from "../types/employee";
@@ -86,33 +89,44 @@ export function EmployeesPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Employees
-      </Typography>
+      <PageHeader
+        title="Employees"
+        subtitle="Search and filter the directory. Results are paginated by the API."
+        action={
+          response ? (
+            <Chip
+              label={`${response.meta.total.toLocaleString()} total`}
+              variant="outlined"
+              sx={{ fontWeight: 600, bgcolor: "background.paper" }}
+            />
+          ) : null
+        }
+      />
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+      <FilterBar>
         <TextField
           label="Search"
           size="small"
+          placeholder="Name, number, role…"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: 240 }}
         />
         <TextField
           label="Country"
           size="small"
           value={country}
           onChange={(event) => handleFilterChange(setCountry, event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 200 }}
         />
         <TextField
           label="Department"
           size="small"
           value={department}
           onChange={(event) => handleFilterChange(setDepartment, event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 200 }}
         />
-      </Box>
+      </FilterBar>
 
       {loading ? (
         <LoadingState message="Loading employees…" />
@@ -134,28 +148,38 @@ export function EmployeesPage() {
                   <TableCell>Department</TableCell>
                   <TableCell>Country</TableCell>
                   <TableCell>Role</TableCell>
-                  <TableCell>Current Salary</TableCell>
+                  <TableCell align="right">Current Salary</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {response.data.map((employee) => (
-                  <TableRow key={employee.id}>
+                  <TableRow key={employee.id} hover>
                     <TableCell>
                       <Link component={RouterLink} to={`/employees/${employee.id}`}>
                         {employee.name}
                       </Link>
                     </TableCell>
-                    <TableCell>{employee.employee_number}</TableCell>
+                    <TableCell>
+                      <Typography component="span" sx={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
+                        {employee.employee_number}
+                      </Typography>
+                    </TableCell>
                     <TableCell>{employee.department}</TableCell>
                     <TableCell>{employee.country}</TableCell>
                     <TableCell>{employee.role}</TableCell>
-                    <TableCell>
-                      {employee.current_salary
-                        ? formatMoney(
+                    <TableCell align="right">
+                      {employee.current_salary ? (
+                        <Typography component="span" sx={{ fontWeight: 600 }}>
+                          {formatMoney(
                             employee.current_salary.amount,
                             employee.current_salary.currency,
-                          )
-                        : "—"}
+                          )}
+                        </Typography>
+                      ) : (
+                        <Typography component="span" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

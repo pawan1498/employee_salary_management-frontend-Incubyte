@@ -19,6 +19,12 @@ import { createSalaryRecord, getEmployee } from "../api/employees";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
+import {
+  DetailGrid,
+  DetailLabel,
+  DetailValue,
+  SectionCard,
+} from "../components/SectionCard";
 import { formatAmount, formatDate } from "../format";
 import type { EmployeeDetail } from "../types/employee";
 
@@ -149,7 +155,7 @@ export function EmployeeDetailPage() {
     return (
       <Box>
         <ErrorState message="Employee not found." />
-        <Link component={RouterLink} to="/employees">
+        <Link component={RouterLink} to="/employees" sx={{ display: "inline-block", mt: 2 }}>
           Back to employees
         </Link>
       </Box>
@@ -167,69 +173,77 @@ export function EmployeeDetailPage() {
 
   return (
     <Box>
-      <Link component={RouterLink} to="/employees" sx={{ display: "inline-block", mb: 2 }}>
-        Back to employees
+      <Link
+        component={RouterLink}
+        to="/employees"
+        sx={{ display: "inline-block", mb: 2, fontSize: "0.875rem" }}
+      >
+        ← Back to employees
       </Link>
-      <Typography variant="h4" sx={{ mb: 3 }}>
+
+      <Typography variant="h4" sx={{ mb: 0.5 }}>
         {employee.name}
       </Typography>
+      <Typography color="text.secondary" sx={{ mb: 3 }}>
+        {employee.employee_number} · {employee.role} · {employee.department}
+      </Typography>
 
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Employee Information
-        </Typography>
-        <Box
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+          gap: 3,
+          mb: 3,
+        }}
+      >
+        <SectionCard title="Employee Information">
+          <DetailGrid>
+            <DetailLabel>Name</DetailLabel>
+            <DetailValue>{employee.name}</DetailValue>
+            <DetailLabel>Employee Number</DetailLabel>
+            <DetailValue>{employee.employee_number}</DetailValue>
+            <DetailLabel>Country</DetailLabel>
+            <DetailValue>{employee.country}</DetailValue>
+            <DetailLabel>Department</DetailLabel>
+            <DetailValue>{employee.department}</DetailValue>
+            <DetailLabel>Role</DetailLabel>
+            <DetailValue>{employee.role}</DetailValue>
+          </DetailGrid>
+        </SectionCard>
+
+        <Paper
+          variant="outlined"
           sx={{
-            display: "grid",
-            gridTemplateColumns: "200px 1fr",
-            rowGap: 1.5,
-            columnGap: 2,
+            p: 3,
+            borderLeft: "4px solid",
+            borderLeftColor: employee.current_salary ? "success.main" : "divider",
+            background: employee.current_salary
+              ? "linear-gradient(135deg, rgba(5, 150, 105, 0.06) 0%, rgba(255, 255, 255, 1) 60%)"
+              : undefined,
           }}
         >
-          <Typography color="text.secondary">Name</Typography>
-          <Typography>{employee.name}</Typography>
-          <Typography color="text.secondary">Employee Number</Typography>
-          <Typography>{employee.employee_number}</Typography>
-          <Typography color="text.secondary">Country</Typography>
-          <Typography>{employee.country}</Typography>
-          <Typography color="text.secondary">Department</Typography>
-          <Typography>{employee.department}</Typography>
-          <Typography color="text.secondary">Role</Typography>
-          <Typography>{employee.role}</Typography>
-        </Box>
-      </Paper>
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Current Salary
+          </Typography>
+          {employee.current_salary ? (
+            <>
+              <Typography variant="h4" sx={{ mb: 1.5 }}>
+                {formatAmount(employee.current_salary.amount, employee.current_salary.currency)}
+              </Typography>
+              <DetailGrid>
+                <DetailLabel>Currency</DetailLabel>
+                <DetailValue>{employee.current_salary.currency}</DetailValue>
+                <DetailLabel>Effective Date</DetailLabel>
+                <DetailValue>{formatDate(employee.current_salary.effective_date)}</DetailValue>
+              </DetailGrid>
+            </>
+          ) : (
+            <Typography color="text.secondary">No salary record</Typography>
+          )}
+        </Paper>
+      </Box>
 
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Current Salary
-        </Typography>
-        {employee.current_salary ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "200px 1fr",
-              rowGap: 1.5,
-              columnGap: 2,
-            }}
-          >
-            <Typography color="text.secondary">Amount</Typography>
-            <Typography>
-              {formatAmount(employee.current_salary.amount, employee.current_salary.currency)}
-            </Typography>
-            <Typography color="text.secondary">Currency</Typography>
-            <Typography>{employee.current_salary.currency}</Typography>
-            <Typography color="text.secondary">Effective Date</Typography>
-            <Typography>{formatDate(employee.current_salary.effective_date)}</Typography>
-          </Box>
-        ) : (
-          <Typography color="text.secondary">No salary record</Typography>
-        )}
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Salary History
-        </Typography>
+      <SectionCard title="Salary History">
         {employee.salary_history.length === 0 ? (
           <EmptyState message="No salary history." />
         ) : (
@@ -244,9 +258,11 @@ export function EmployeeDetailPage() {
               </TableHead>
               <TableBody>
                 {employee.salary_history.map((record) => (
-                  <TableRow key={record.id}>
+                  <TableRow key={record.id} hover>
                     <TableCell>{formatDate(record.effective_date)}</TableCell>
-                    <TableCell>{formatAmount(record.amount, record.currency)}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>
+                      {formatAmount(record.amount, record.currency)}
+                    </TableCell>
                     <TableCell>{record.currency}</TableCell>
                   </TableRow>
                 ))}
@@ -254,12 +270,9 @@ export function EmployeeDetailPage() {
             </Table>
           </TableContainer>
         )}
-      </Paper>
+      </SectionCard>
 
-      <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Add Salary
-        </Typography>
+      <SectionCard title="Add Salary">
         {apiErrors.length > 0 ? (
           <Box sx={{ mb: 2 }}>
             {apiErrors.map((message) => (
@@ -305,7 +318,7 @@ export function EmployeeDetailPage() {
             {submitting ? "Saving…" : "Add salary"}
           </Button>
         </Box>
-      </Paper>
+      </SectionCard>
     </Box>
   );
 }

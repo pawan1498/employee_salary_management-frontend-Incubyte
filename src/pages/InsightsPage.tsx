@@ -14,7 +14,10 @@ import {
 import { getInsights } from "../api/insights";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
+import { FilterBar } from "../components/FilterBar";
 import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
+import { StatCard } from "../components/StatCard";
 import { formatMoney } from "../format";
 import type { Insights } from "../types/insights";
 
@@ -61,26 +64,27 @@ export function InsightsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Insights
-      </Typography>
+      <PageHeader
+        title="Insights"
+        subtitle="Compensation totals from the API. Amounts stay in their native currency."
+      />
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+      <FilterBar>
         <TextField
           label="Country"
           size="small"
           value={country}
           onChange={(event) => setCountry(event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 200 }}
         />
         <TextField
           label="Department"
           size="small"
           value={department}
           onChange={(event) => setDepartment(event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 200 }}
         />
-      </Box>
+      </FilterBar>
 
       {loading ? (
         <LoadingState message="Loading insights…" />
@@ -93,19 +97,23 @@ export function InsightsPage() {
         <EmptyState message="No employees match your filters." />
       ) : (
         <>
-          <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-            <Typography color="text.secondary">Headcount</Typography>
-            <Typography variant="h4" sx={{ mt: 0.5 }}>
-              {insights.headcount}
-            </Typography>
-          </Paper>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
+            <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
+            {insights.by_currency.slice(0, 2).map((row) => (
+              <StatCard
+                key={row.currency}
+                label={`Total (${row.currency})`}
+                value={formatMoney(row.total, row.currency)}
+              />
+            ))}
+          </Box>
 
           <BreakdownTable
             title="By currency"
             columns={["Currency", "Headcount", "Total", "Average"]}
             rows={insights.by_currency.map((row) => [
               row.currency,
-              row.headcount,
+              row.headcount.toLocaleString(),
               formatMoney(row.total, row.currency),
               formatMoney(row.average, row.currency),
             ])}
@@ -117,7 +125,7 @@ export function InsightsPage() {
             rows={insights.by_country.map((row) => [
               row.country,
               row.currency,
-              row.headcount,
+              row.headcount.toLocaleString(),
               formatMoney(row.total, row.currency),
               formatMoney(row.average, row.currency),
             ])}
@@ -129,7 +137,7 @@ export function InsightsPage() {
             rows={insights.by_department.map((row) => [
               row.department,
               row.currency,
-              row.headcount,
+              row.headcount.toLocaleString(),
               formatMoney(row.total, row.currency),
               formatMoney(row.average, row.currency),
             ])}
@@ -138,7 +146,11 @@ export function InsightsPage() {
           <BreakdownTable
             title="Distribution"
             columns={["Currency", "Bucket", "Headcount"]}
-            rows={insights.distribution.map((row) => [row.currency, row.bucket, row.headcount])}
+            rows={insights.distribution.map((row) => [
+              row.currency,
+              row.bucket,
+              row.headcount.toLocaleString(),
+            ])}
           />
         </>
       )}
@@ -157,13 +169,18 @@ function BreakdownTable({
 }) {
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h5" sx={{ mb: 1.5 }}>
-        {title}
-      </Typography>
       {rows.length === 0 ? (
-        <EmptyState message="No salary data." />
+        <>
+          <Typography variant="h5" sx={{ mb: 1.5 }}>
+            {title}
+          </Typography>
+          <EmptyState message="No salary data." />
+        </>
       ) : (
         <TableContainer component={Paper} variant="outlined">
+          <Box sx={{ px: 2.5, py: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+            <Typography variant="h5">{title}</Typography>
+          </Box>
           <Table>
             <TableHead>
               <TableRow>
@@ -174,7 +191,7 @@ function BreakdownTable({
             </TableHead>
             <TableBody>
               {rows.map((row, index) => (
-                <TableRow key={`${title}-${index}`}>
+                <TableRow key={`${title}-${index}`} hover>
                   {row.map((cell, cellIndex) => (
                     <TableCell key={`${title}-${index}-${cellIndex}`}>{cell}</TableCell>
                   ))}
