@@ -2,37 +2,63 @@ import { AppBar, Box, Container, Toolbar, Typography } from "@mui/material";
 import { NavLink, Outlet } from "react-router-dom";
 
 const navLinkSx = {
-  color: "inherit",
+  color: "text.secondary",
   textDecoration: "none",
-  fontSize: "0.95rem",
-  px: 1.5,
-  py: 0.5,
-  borderBottom: "2px solid transparent",
+  fontSize: "0.875rem",
+  fontWeight: 500,
+  px: 1.75,
+  py: 0.85,
+  borderRadius: 999,
+  transition: "all 0.15s ease",
+  "&:hover": {
+    color: "text.primary",
+    backgroundColor: "rgba(15, 23, 42, 0.04)",
+  },
   "&.active": {
-    borderBottomColor: "common.white",
-    fontWeight: 600,
+    color: "primary.main",
+    backgroundColor: "primary.light",
+    fontWeight: 650,
   },
 };
 
 export function Layout() {
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <AppBar position="static" elevation={0}>
-        <Toolbar sx={{ gap: 3 }}>
-          <Typography variant="h6" sx={{ flexGrow: 0, mr: 2, fontWeight: 600 }}>
-            HR Salary Management
-          </Typography>
-          <Box component="nav" sx={{ display: "flex", gap: 1 }}>
-            <Box component={NavLink} to="/" end sx={navLinkSx}>
-              Insights
+    <Box sx={{ minHeight: "100vh" }}>
+      <AppBar position="sticky">
+        <Container maxWidth="lg">
+          <Toolbar disableGutters sx={{ gap: 2, minHeight: 64 }}>
+            <Box
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: 2,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 700,
+                fontSize: "0.8rem",
+                letterSpacing: "-0.02em",
+                mr: 0.5,
+              }}
+            >
+              HR
             </Box>
-            <Box component={NavLink} to="/employees" sx={navLinkSx}>
-              Employees
+            <Typography variant="h6" sx={{ mr: 2, fontWeight: 700, letterSpacing: "-0.02em" }}>
+              Salary Management
+            </Typography>
+            <Box component="nav" sx={{ display: "flex", gap: 0.5 }}>
+              <Box component={NavLink} to="/" end sx={navLinkSx}>
+                Insights
+              </Box>
+              <Box component={NavLink} to="/employees" sx={navLinkSx}>
+                Employees
+              </Box>
             </Box>
-          </Box>
-        </Toolbar>
+          </Toolbar>
+        </Container>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 4 } }}>
         <Outlet />
       </Container>
     </Box>

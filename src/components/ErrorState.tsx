@@ -1,9 +1,9 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Button, Paper, Typography } from "@mui/material";
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <Box sx={{ py: 4 }}>
-      <Typography color="error" sx={{ mb: onRetry ? 2 : 0 }}>
+    <Paper variant="outlined" sx={{ py: 4, px: 3 }}>
+      <Typography color="error.main" sx={{ fontWeight: 500, mb: onRetry ? 2 : 0 }}>
         {message}
       </Typography>
       {onRetry ? (
@@ -11,6 +11,6 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
           Retry
         </Button>
       ) : null}
-    </Box>
+    </Paper>
   );
 }
