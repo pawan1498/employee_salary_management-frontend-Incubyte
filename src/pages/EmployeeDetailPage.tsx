@@ -67,6 +67,7 @@ export function EmployeeDetailPage() {
   const { id } = useParams();
   const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<"not-found" | "load" | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -93,8 +94,7 @@ export function EmployeeDetailPage() {
       try {
         const result = await getEmployee(id as string);
         if (!cancelled) {
-          setEmployee(result.data);
-          setCurrency((current) => current || result.data.current_salary?.currency || CURRENCIES[0]);
+          applyEmployee(result.data);
         }
       } catch (err) {
         if (!cancelled) {
@@ -113,6 +113,31 @@ export function EmployeeDetailPage() {
       cancelled = true;
     };
   }, [id, reloadKey]);
+
+  function applyEmployee(data: EmployeeDetail) {
+    setEmployee(data);
+    setCurrency(data.current_salary?.currency ?? CURRENCIES[0]);
+  }
+
+  async function refreshEmployee() {
+    if (!id) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const result = await getEmployee(id);
+      applyEmployee(result.data);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setError("not-found");
+      } else {
+        setApiErrors(["Unable to refresh employee after saving."]);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,8 +163,8 @@ export function EmployeeDetailPage() {
       await createSalaryRecord(id, values);
       setAmount("");
       setEffectiveDate("");
-      setCurrency("");
-      setReloadKey((key) => key + 1);
+      setApiErrors([]);
+      await refreshEmployee();
     } catch (err) {
       if (err instanceof ApiError) {
         setApiErrors(err.errors);
@@ -224,10 +249,17 @@ export function EmployeeDetailPage() {
             background: employee.current_salary
               ? "linear-gradient(135deg, rgba(5, 150, 105, 0.06) 0%, rgba(255, 255, 255, 1) 60%)"
               : undefined,
+            opacity: refreshing ? 0.6 : 1,
+            transition: "opacity 0.15s ease",
           }}
         >
           <Typography variant="h5" sx={{ mb: 2 }}>
             Current Salary
+            {refreshing ? (
+              <Typography component="span" color="text.secondary" sx={{ fontSize: "0.85rem", ml: 1 }}>
+                Updating…
+              </Typography>
+            ) : null}
           </Typography>
           {employee.current_salary ? (
             <>
@@ -329,7 +361,7 @@ export function EmployeeDetailPage() {
             helperText={formErrors.effective_date}
             slotProps={{ inputLabel: { shrink: true } }}
           />
-          <Button type="submit" variant="contained" disabled={submitting}>
+          <Button type="submit" variant="contained" disabled={submitting || refreshing}>
             {submitting ? "Saving…" : "Add salary"}
           </Button>
         </Box>
