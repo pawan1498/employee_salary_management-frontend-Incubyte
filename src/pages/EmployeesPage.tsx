@@ -23,7 +23,7 @@ import { COUNTRIES, DEPARTMENTS } from "../constants/filters";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { formatMoney } from "../format";
+import { formatAmount } from "../format";
 import type { EmployeeListResponse } from "../types/employee";
 
 const PER_PAGE = 25;
@@ -167,10 +167,10 @@ export function EmployeesPage() {
                     <TableCell>{employee.department}</TableCell>
                     <TableCell>{employee.country}</TableCell>
                     <TableCell>{employee.role}</TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
                       {employee.current_salary ? (
                         <Typography component="span" sx={{ fontWeight: 600 }}>
-                          {formatMoney(
+                          {formatAmount(
                             employee.current_salary.amount,
                             employee.current_salary.currency,
                           )}
