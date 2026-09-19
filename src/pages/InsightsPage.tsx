@@ -21,6 +21,8 @@ import { FilterBar } from "../components/FilterBar";
 import { FilterSelect } from "../components/FilterSelect";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
+import { SalaryCostByCountryChart } from "../components/insights/SalaryCostByCountryChart";
+import { SalaryCostByDepartmentChart } from "../components/insights/SalaryCostByDepartmentChart";
 import { ReportingCurrencySelect } from "../components/ReportingCurrencySelect";
 import { StatCard } from "../components/StatCard";
 import { useBaseCurrency } from "../hooks/useBaseCurrency";
@@ -193,47 +195,69 @@ export function InsightsPage() {
 
             <Box sx={{ p: 2.5 }}>
               {activeTab === "country" && (
-                <BreakdownTable
-                  emptyMessage="No salary data for these filters."
-                  columns={[
-                    "Country",
-                    "Headcount",
-                    `Total (${insights.base_currency})`,
-                    `Average (${insights.base_currency})`,
-                  ]}
-                  rows={insights.by_country.map((row) => ({
-                    key: row.country,
-                    cells: [
-                      row.country,
-                      row.headcount.toLocaleString(),
-                      formatAmount(row.total, insights.base_currency),
-                      formatAmount(row.average, insights.base_currency),
-                    ],
-                    alignments: ["left", "left", "right", "right"],
-                  }))}
-                />
+                <Box>
+                  <SalaryCostByCountryChart
+                    embedded
+                    reportingCurrency={insights.base_currency}
+                    organizationTotal={insights.total}
+                    countries={insights.by_country.map((row) => ({
+                      country: row.country,
+                      salaryCost: row.total,
+                    }))}
+                  />
+                  <BreakdownTable
+                    emptyMessage="No salary data for these filters."
+                    columns={[
+                      "Country",
+                      "Headcount",
+                      `Total (${insights.base_currency})`,
+                      `Average (${insights.base_currency})`,
+                    ]}
+                    rows={insights.by_country.map((row) => ({
+                      key: row.country,
+                      cells: [
+                        row.country,
+                        row.headcount.toLocaleString(),
+                        formatAmount(row.total, insights.base_currency),
+                        formatAmount(row.average, insights.base_currency),
+                      ],
+                      alignments: ["left", "left", "right", "right"],
+                    }))}
+                  />
+                </Box>
               )}
 
               {activeTab === "department" && (
-                <BreakdownTable
-                  emptyMessage="No salary data for these filters."
-                  columns={[
-                    "Department",
-                    "Headcount",
-                    `Total (${insights.base_currency})`,
-                    `Average (${insights.base_currency})`,
-                  ]}
-                  rows={insights.by_department.map((row) => ({
-                    key: row.department,
-                    cells: [
-                      row.department,
-                      row.headcount.toLocaleString(),
-                      formatAmount(row.total, insights.base_currency),
-                      formatAmount(row.average, insights.base_currency),
-                    ],
-                    alignments: ["left", "left", "right", "right"],
-                  }))}
-                />
+                <Box>
+                  <SalaryCostByDepartmentChart
+                    embedded
+                    reportingCurrency={insights.base_currency}
+                    organizationTotal={insights.total}
+                    departments={insights.by_department.map((row) => ({
+                      department: row.department,
+                      salaryCost: row.total,
+                    }))}
+                  />
+                  <BreakdownTable
+                    emptyMessage="No salary data for these filters."
+                    columns={[
+                      "Department",
+                      "Headcount",
+                      `Total (${insights.base_currency})`,
+                      `Average (${insights.base_currency})`,
+                    ]}
+                    rows={insights.by_department.map((row) => ({
+                      key: row.department,
+                      cells: [
+                        row.department,
+                        row.headcount.toLocaleString(),
+                        formatAmount(row.total, insights.base_currency),
+                        formatAmount(row.average, insights.base_currency),
+                      ],
+                      alignments: ["left", "left", "right", "right"],
+                    }))}
+                  />
+                </Box>
               )}
 
               {activeTab === "ranges" && (
