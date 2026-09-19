@@ -1,4 +1,5 @@
 import { Typography } from "@mui/material";
+import { formatDate } from "../format";
 
 type NativeCurrencyNoteProps = {
   baseCurrency?: string;
@@ -8,17 +9,16 @@ type NativeCurrencyNoteProps = {
 export function NativeCurrencyNote({ baseCurrency, ratesAsOf }: NativeCurrencyNoteProps) {
   return (
     <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 3 }}>
-      Each employee&apos;s <strong>base pay</strong> is the amount stored on their salary record in
-      their salary currency (any Frankfurter-supported ISO code from filters).
+      Each employee&apos;s salary is stored in the currency they are paid in.
       {baseCurrency ? (
         <>
           {" "}
-          Approximate equivalents in <strong>{baseCurrency}</strong> use the exchange-rates API
-          (same ECB cache as Insights)
-          {ratesAsOf ? <> (rates as of {ratesAsOf})</> : null}.
+          Choose <strong>{baseCurrency}</strong> below to see estimated equivalents and compare pay
+          across countries
+          {ratesAsOf ? <> (rates updated {formatDate(ratesAsOf)})</> : null}.
         </>
       ) : (
-        " Pick a reporting currency to see approximate equivalents."
+        " Choose a currency below to compare salaries across countries."
       )}
     </Typography>
   );

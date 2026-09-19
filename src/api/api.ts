@@ -46,7 +46,7 @@ export async function apiFetch<T>(
       },
     });
   } catch {
-    throw new ApiError(0, ["Unable to reach the server."]);
+    throw new ApiError(0, ["Could not connect. Please try again."]);
   }
 
   let body: unknown = null;

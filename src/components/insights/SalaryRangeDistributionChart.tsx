@@ -23,7 +23,7 @@ export function SalaryRangeDistributionChart({
   return (
     <SalaryCostDonutChart
       title="Headcount by Salary Range"
-      subtitle={`Employee share across fixed salary buckets in ${baseCurrency}`}
+      subtitle={`How employees are spread across salary bands (${baseCurrency})`}
       emptyMessage="No salary range data for these filters."
       loadingMessage="Loading salary range distribution…"
       ariaLabel={`Headcount by salary range in ${baseCurrency}`}
@@ -33,7 +33,7 @@ export function SalaryRangeDistributionChart({
       embedded={embedded}
       valueKind="headcount"
       sortSlices={false}
-      centerSubtitle="ranges"
+      centerSubtitle="employees"
     />
   );
 }

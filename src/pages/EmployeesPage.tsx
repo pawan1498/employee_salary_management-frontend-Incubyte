@@ -137,7 +137,7 @@ export function EmployeesPage() {
     <Box>
       <PageHeader
         title="Employees"
-        subtitle="Search and filter the directory. Results are paginated by the API."
+        subtitle="Search and browse the employee directory."
         action={
           response ? (
             <Chip
@@ -218,8 +218,8 @@ export function EmployeesPage() {
                   <TableCell>Department</TableCell>
                   <TableCell>Country</TableCell>
                   <TableCell>Role</TableCell>
-                  <TableCell align="right">Base pay</TableCell>
-                  <TableCell align="right">Approx. ({baseCurrency})</TableCell>
+                  <TableCell align="right">Salary</TableCell>
+                  <TableCell align="right">In {baseCurrency}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

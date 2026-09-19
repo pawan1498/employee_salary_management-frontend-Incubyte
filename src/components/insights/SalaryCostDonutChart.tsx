@@ -42,7 +42,7 @@ export function SalaryCostDonutChart({
   embedded = false,
   valueKind = "money",
   sortSlices = true,
-  centerSubtitle = "reporting",
+  centerSubtitle = "",
 }: SalaryCostDonutChartProps) {
   function formatSliceValue(value: number): string {
     if (valueKind === "headcount") {
@@ -193,12 +193,21 @@ export function SalaryCostDonutChart({
               </Tooltip>
             );
           })}
-          <text x={CX} y={CY - 4} textAnchor="middle" fill="#64748b" fontSize="13" fontWeight="600">
+          <text
+            x={CX}
+            y={centerSubtitle ? CY - 4 : CY + 4}
+            textAnchor="middle"
+            fill="#64748b"
+            fontSize="13"
+            fontWeight="600"
+          >
             {reportingCurrency}
           </text>
-          <text x={CX} y={CY + 12} textAnchor="middle" fill="#94a3b8" fontSize="10">
-            {centerSubtitle}
-          </text>
+          {centerSubtitle ? (
+            <text x={CX} y={CY + 12} textAnchor="middle" fill="#94a3b8" fontSize="10">
+              {centerSubtitle}
+            </text>
+          ) : null}
         </Box>
 
         <Box

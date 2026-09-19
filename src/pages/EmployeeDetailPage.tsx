@@ -308,7 +308,7 @@ export function EmployeeDetailPage() {
           }}
         >
           <Typography variant="h5" sx={{ mb: 2 }}>
-            Current base pay
+            Current salary
             {refreshing ? (
               <Typography component="span" color="text.secondary" sx={{ fontSize: "0.85rem", ml: 1 }}>
                 Updating…
@@ -318,7 +318,7 @@ export function EmployeeDetailPage() {
           {employee.current_salary ? (
             <>
               <DetailGrid>
-                <DetailLabel>Base pay</DetailLabel>
+                <DetailLabel>Salary</DetailLabel>
                 <DetailValue>
                   {ratesLoading ? (
                     "Loading…"
@@ -333,7 +333,7 @@ export function EmployeeDetailPage() {
                     />
                   )}
                 </DetailValue>
-                <DetailLabel>Approx. ({baseCurrency})</DetailLabel>
+                <DetailLabel>In {baseCurrency}</DetailLabel>
                 <DetailValue>
                   {ratesLoading ? (
                     "Loading…"
@@ -367,8 +367,8 @@ export function EmployeeDetailPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Effective Date</TableCell>
-                  <TableCell align="right">Base pay</TableCell>
-                  <TableCell align="right">Approx. ({baseCurrency || "reporting"})</TableCell>
+                  <TableCell align="right">Salary</TableCell>
+                  <TableCell align="right">In {baseCurrency || "selected currency"}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -403,8 +403,7 @@ export function EmployeeDetailPage() {
 
       <SectionCard title="Add Salary">
         <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 2 }}>
-          Currency must be one of the Frankfurter-supported codes from filters ({currencies.length}{" "}
-          ISO codes — same list as reporting currency and insights).
+          Select the currency this salary is paid in. {currencies.length} currencies are supported.
         </Typography>
         {apiErrors.length > 0 ? (
           <Box sx={{ mb: 2 }}>

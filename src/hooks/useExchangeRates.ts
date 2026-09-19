@@ -28,9 +28,9 @@ export function useExchangeRates(baseCurrency: string) {
         if (!cancelled) {
           setRates(null);
           if (err instanceof ApiError) {
-            setError(err.errors.join(" ") || "Unable to load exchange rates.");
+            setError(err.errors.join(" ") || "Unable to load currency rates.");
           } else {
-            setError("Unable to load exchange rates.");
+            setError("Unable to load currency rates.");
           }
         }
       } finally {

@@ -28,7 +28,7 @@ export function SalaryCostByCountryChart({
   return (
     <SalaryCostDonutChart
       title="Salary Cost by Country"
-      subtitle="Share of total salary cost across countries"
+      subtitle="How total pay is split across countries"
       emptyMessage="No salary data available by country."
       loadingMessage="Loading salary cost by country…"
       ariaLabel={`Salary cost by country in ${reportingCurrency}`}

@@ -28,7 +28,7 @@ export function SalaryCostByDepartmentChart({
   return (
     <SalaryCostDonutChart
       title="Salary Cost by Department"
-      subtitle="Share of total salary cost across departments"
+      subtitle="How total pay is split across departments"
       emptyMessage="No salary data available by department."
       loadingMessage="Loading salary cost by department…"
       ariaLabel={`Salary cost by department in ${reportingCurrency}`}

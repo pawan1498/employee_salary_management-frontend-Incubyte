@@ -9,7 +9,7 @@ type ReportingCurrencySelectProps = {
 };
 
 export function ReportingCurrencySelect({
-  label = "Reporting currency",
+  label = "View in currency",
   value,
   options,
   onChange,

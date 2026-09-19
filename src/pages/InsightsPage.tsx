@@ -100,7 +100,7 @@ export function InsightsPage() {
       <Box>
         <PageHeader
           title="Insights"
-          subtitle="Compensation totals converted to a reporting currency using ECB exchange rates."
+          subtitle="Compare total pay, averages, and breakdowns in one currency."
         />
         <LoadingState message="Loading filters…" />
       </Box>
@@ -120,7 +120,7 @@ export function InsightsPage() {
     <Box>
       <PageHeader
         title="Insights"
-        subtitle="Compensation totals converted to a reporting currency using ECB exchange rates. Employee salaries stay in their native currency — conversion happens on the server."
+        subtitle="Pick a currency to compare pay across the organization. Each employee's salary stays in the currency they are paid in."
       />
 
       <FilterBar>
@@ -148,7 +148,7 @@ export function InsightsPage() {
           ...(country ? [{ label: `Country: ${country}`, onRemove: () => setCountry("") }] : []),
           ...(department ? [{ label: `Department: ${department}`, onRemove: () => setDepartment("") }] : []),
         ]}
-        emptyMessage={`Showing all countries and departments in ${baseCurrency}.`}
+        emptyMessage={`Showing all employees. Amounts shown in ${baseCurrency}.`}
         onClearAll={country || department ? clearFilters : undefined}
       />
 
@@ -164,8 +164,8 @@ export function InsightsPage() {
             <Box sx={{ flex: "0 1 220px" }}>
               <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
               <Typography color="text.secondary" sx={{ fontSize: "0.8rem", mt: 1.5, lineHeight: 1.5 }}>
-                Employees matching the filters above. Employees with no current salary on file are
-                counted here but left out of the breakdowns below.
+                Everyone matching your filters. People without a salary on file are counted here but
+                not included in the pay charts and tables below.
               </Typography>
             </Box>
             <StatCard
@@ -183,7 +183,7 @@ export function InsightsPage() {
           </Box>
 
           <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 3 }}>
-            All amounts below are in {insights.base_currency}, converted on the server. Rates as of{" "}
+            All amounts below are shown in {insights.base_currency}. Exchange rates updated{" "}
             {formatDate(insights.rates_as_of)}.
           </Typography>
 
@@ -352,14 +352,13 @@ function SalaryRangesPanel({
   return (
     <Box>
       <Typography color="text.secondary" sx={{ fontSize: "0.875rem", mb: 2 }}>
-        How many employees fall into fixed salary ranges in {baseCurrency}, after conversion on the
-        server.
+        How many employees fall in each salary band. Band amounts are shown in {baseCurrency}.
       </Typography>
 
       {showDominantNote ? (
         <Typography color="text.secondary" sx={{ fontSize: "0.875rem", mb: 2 }}>
-          Most employees fall in one range — fixed absolute ranges may not reflect typical salaries
-          in {baseCurrency}.
+          Most employees sit in one band — the fixed bands may not reflect typical pay levels in{" "}
+          {baseCurrency}.
         </Typography>
       ) : null}
 
