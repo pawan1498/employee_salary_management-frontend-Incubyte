@@ -176,6 +176,10 @@ export function InsightsPage() {
               label={`Average (${insights.base_currency})`}
               value={formatAmount(insights.average, insights.base_currency)}
             />
+            <StatCard
+              label={`Median (${insights.base_currency})`}
+              value={formatAmount(insights.median, insights.base_currency)}
+            />
           </Box>
 
           <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 3 }}>

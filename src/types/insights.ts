@@ -23,6 +23,7 @@ export type Insights = {
   headcount: number;
   total: string;
   average: string;
+  median: string;
   by_country: CountryBreakdown[];
   by_department: DepartmentBreakdown[];
   distribution: DistributionBucket[];
