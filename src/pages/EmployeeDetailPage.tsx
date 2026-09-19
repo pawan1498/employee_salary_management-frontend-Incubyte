@@ -3,8 +3,12 @@ import { Link as RouterLink, useParams } from "react-router-dom";
 import {
   Box,
   Button,
+  FormControl,
+  InputLabel,
   Link,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -25,6 +29,7 @@ import {
   DetailValue,
   SectionCard,
 } from "../components/SectionCard";
+import { CURRENCIES } from "../constants/filters";
 import { formatAmount, formatDate } from "../format";
 import type { EmployeeDetail } from "../types/employee";
 
@@ -49,8 +54,6 @@ function validateSalaryForm(values: {
 
   if (!values.currency.trim()) {
     errors.currency = "Currency is required.";
-  } else if (!/^[A-Z]{3}$/.test(values.currency)) {
-    errors.currency = "Currency must be 3 uppercase letters.";
   }
 
   if (!values.effective_date) {
@@ -91,6 +94,7 @@ export function EmployeeDetailPage() {
         const result = await getEmployee(id as string);
         if (!cancelled) {
           setEmployee(result.data);
+          setCurrency((current) => current || result.data.current_salary?.currency || CURRENCIES[0]);
         }
       } catch (err) {
         if (!cancelled) {
@@ -133,8 +137,8 @@ export function EmployeeDetailPage() {
     try {
       await createSalaryRecord(id, values);
       setAmount("");
-      setCurrency("");
       setEffectiveDate("");
+      setCurrency("");
       setReloadKey((key) => key + 1);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -295,15 +299,26 @@ export function EmployeeDetailPage() {
             error={Boolean(formErrors.amount)}
             helperText={formErrors.amount}
           />
-          <TextField
-            label="Currency"
-            size="small"
-            value={currency}
-            onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-            error={Boolean(formErrors.currency)}
-            helperText={formErrors.currency}
-            slotProps={{ htmlInput: { maxLength: 3 } }}
-          />
+          <FormControl size="small" sx={{ minWidth: 120 }} error={Boolean(formErrors.currency)}>
+            <InputLabel id="salary-currency-label">Currency</InputLabel>
+            <Select
+              labelId="salary-currency-label"
+              label="Currency"
+              value={currency}
+              onChange={(event) => setCurrency(event.target.value)}
+            >
+              {CURRENCIES.map((code) => (
+                <MenuItem key={code} value={code}>
+                  {code}
+                </MenuItem>
+              ))}
+            </Select>
+            {formErrors.currency ? (
+              <Typography color="error" sx={{ fontSize: "0.75rem", mt: 0.5, mx: 1.75 }}>
+                {formErrors.currency}
+              </Typography>
+            ) : null}
+          </FormControl>
           <TextField
             label="Effective Date"
             size="small"

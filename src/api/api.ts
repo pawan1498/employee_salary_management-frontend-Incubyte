@@ -33,13 +33,15 @@ export async function apiFetch<T>(
     throw new ApiError(0, ["API URL is not configured."]);
   }
 
+  const isFormData = options.body instanceof FormData;
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path, params), {
       ...options,
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...options.headers,
       },
     });

@@ -13,3 +13,5 @@ export const DEPARTMENTS = [
   "Sales",
   "Operations",
 ] as const;
+
+export const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "INR"] as const;
