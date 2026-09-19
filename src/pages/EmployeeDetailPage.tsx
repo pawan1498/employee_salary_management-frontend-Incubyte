@@ -3,12 +3,8 @@ import { Link as RouterLink, useParams } from "react-router-dom";
 import {
   Box,
   Button,
-  FormControl,
-  InputLabel,
   Link,
-  MenuItem,
   Paper,
-  Select,
   Table,
   TableBody,
   TableCell,
@@ -22,15 +18,21 @@ import { ApiError } from "../api/api";
 import { createSalaryRecord, getEmployee } from "../api/employees";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
+import { FilterBar } from "../components/FilterBar";
 import { LoadingState } from "../components/LoadingState";
+import { NativeCurrencyNote } from "../components/NativeCurrencyNote";
+import { ReportingCurrencySelect } from "../components/ReportingCurrencySelect";
+import { SalaryAmountDisplay } from "../components/SalaryAmountDisplay";
+import { useBaseCurrency } from "../hooks/useBaseCurrency";
+import { useExchangeRates } from "../hooks/useExchangeRates";
 import {
   DetailGrid,
   DetailLabel,
   DetailValue,
   SectionCard,
 } from "../components/SectionCard";
-import { CURRENCIES } from "../constants/filters";
-import { formatAmount, formatDate } from "../format";
+import { useFilters } from "../hooks/useFilters";
+import { formatDate } from "../format";
 import type { EmployeeDetail } from "../types/employee";
 
 type FormErrors = {
@@ -39,11 +41,14 @@ type FormErrors = {
   effective_date?: string;
 };
 
-function validateSalaryForm(values: {
-  amount: string;
-  currency: string;
-  effective_date: string;
-}): FormErrors {
+function validateSalaryForm(
+  values: {
+    amount: string;
+    currency: string;
+    effective_date: string;
+  },
+  allowedCurrencies: string[],
+): FormErrors {
   const errors: FormErrors = {};
 
   if (!values.amount.trim()) {
@@ -54,6 +59,8 @@ function validateSalaryForm(values: {
 
   if (!values.currency.trim()) {
     errors.currency = "Currency is required.";
+  } else if (!allowedCurrencies.includes(values.currency)) {
+    errors.currency = `Currency must be one of: ${allowedCurrencies.join(", ")}.`;
   }
 
   if (!values.effective_date) {
@@ -64,6 +71,10 @@ function validateSalaryForm(values: {
 }
 
 export function EmployeeDetailPage() {
+  const { filters, loading: filtersLoading, error: filtersError } = useFilters();
+  const { baseCurrency, setBaseCurrency, currencies } = useBaseCurrency(filters);
+  const { rates: exchangeRates, loading: ratesLoading, error: ratesError, retry: retryRates } =
+    useExchangeRates(baseCurrency);
   const { id } = useParams();
   const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,9 +125,32 @@ export function EmployeeDetailPage() {
     };
   }, [id, reloadKey]);
 
+  useEffect(() => {
+    if (!employee || currency || currencies.length === 0) {
+      return;
+    }
+
+    const preferred = employee.current_salary?.currency;
+    if (preferred && currencies.includes(preferred)) {
+      setCurrency(preferred);
+      return;
+    }
+
+    setCurrency(currencies[0]);
+  }, [employee, currency, currencies]);
+
   function applyEmployee(data: EmployeeDetail) {
     setEmployee(data);
-    setCurrency(data.current_salary?.currency ?? CURRENCIES[0]);
+    setCurrency((current) => {
+      if (current) {
+        return current;
+      }
+      const preferred = data.current_salary?.currency;
+      if (preferred && currencies.includes(preferred)) {
+        return preferred;
+      }
+      return currencies[0] ?? "";
+    });
   }
 
   async function refreshEmployee() {
@@ -128,6 +162,7 @@ export function EmployeeDetailPage() {
     try {
       const result = await getEmployee(id);
       applyEmployee(result.data);
+      setCurrency("");
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         setError("not-found");
@@ -150,7 +185,7 @@ export function EmployeeDetailPage() {
       currency: currency.trim(),
       effective_date: effectiveDate,
     };
-    const nextErrors = validateSalaryForm(values);
+    const nextErrors = validateSalaryForm(values, currencies);
     setFormErrors(nextErrors);
     setApiErrors([]);
 
@@ -176,8 +211,12 @@ export function EmployeeDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading || filtersLoading) {
     return <LoadingState message="Loading employee…" />;
+  }
+
+  if (filtersError || !filters) {
+    return <ErrorState message="Unable to load filter options." />;
   }
 
   if (error === "not-found") {
@@ -213,9 +252,24 @@ export function EmployeeDetailPage() {
       <Typography variant="h4" sx={{ mb: 0.5 }}>
         {employee.name}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
+      <Typography color="text.secondary" sx={{ mb: 1 }}>
         {employee.employee_number} · {employee.role} · {employee.department}
       </Typography>
+      <NativeCurrencyNote baseCurrency={baseCurrency} ratesAsOf={exchangeRates?.rates_as_of} />
+
+      <FilterBar>
+        <ReportingCurrencySelect
+          value={baseCurrency}
+          options={currencies}
+          onChange={setBaseCurrency}
+        />
+      </FilterBar>
+
+      {ratesError ? (
+        <Box sx={{ mb: 3 }}>
+          <ErrorState message={ratesError} onRetry={retryRates} />
+        </Box>
+      ) : null}
 
       <Box
         sx={{
@@ -254,7 +308,7 @@ export function EmployeeDetailPage() {
           }}
         >
           <Typography variant="h5" sx={{ mb: 2 }}>
-            Current Salary
+            Current base pay
             {refreshing ? (
               <Typography component="span" color="text.secondary" sx={{ fontSize: "0.85rem", ml: 1 }}>
                 Updating…
@@ -263,13 +317,38 @@ export function EmployeeDetailPage() {
           </Typography>
           {employee.current_salary ? (
             <>
-              <Typography variant="h4" sx={{ mb: 1.5 }}>
-                {formatAmount(employee.current_salary.amount, employee.current_salary.currency)}
-              </Typography>
               <DetailGrid>
-                <DetailLabel>Currency</DetailLabel>
-                <DetailValue>{employee.current_salary.currency}</DetailValue>
-                <DetailLabel>Effective Date</DetailLabel>
+                <DetailLabel>Base pay</DetailLabel>
+                <DetailValue>
+                  {ratesLoading ? (
+                    "Loading…"
+                  ) : (
+                    <SalaryAmountDisplay
+                      variant="base"
+                      amount={employee.current_salary.amount}
+                      currency={employee.current_salary.currency}
+                      baseCurrency={baseCurrency}
+                      rates={exchangeRates?.rates ?? null}
+                      align="left"
+                    />
+                  )}
+                </DetailValue>
+                <DetailLabel>Approx. ({baseCurrency})</DetailLabel>
+                <DetailValue>
+                  {ratesLoading ? (
+                    "Loading…"
+                  ) : (
+                    <SalaryAmountDisplay
+                      variant="approx"
+                      amount={employee.current_salary.amount}
+                      currency={employee.current_salary.currency}
+                      baseCurrency={baseCurrency}
+                      rates={exchangeRates?.rates ?? null}
+                      align="left"
+                    />
+                  )}
+                </DetailValue>
+                <DetailLabel>Effective date</DetailLabel>
                 <DetailValue>{formatDate(employee.current_salary.effective_date)}</DetailValue>
               </DetailGrid>
             </>
@@ -283,23 +362,37 @@ export function EmployeeDetailPage() {
         {employee.salary_history.length === 0 ? (
           <EmptyState message="No salary history." />
         ) : (
-          <TableContainer>
+          <TableContainer sx={{ overflowX: "auto" }}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Effective Date</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Currency</TableCell>
+                  <TableCell align="right">Base pay</TableCell>
+                  <TableCell align="right">Approx. ({baseCurrency || "reporting"})</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {employee.salary_history.map((record) => (
                   <TableRow key={record.id} hover>
                     <TableCell>{formatDate(record.effective_date)}</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>
-                      {formatAmount(record.amount, record.currency)}
+                    <TableCell align="right">
+                      <SalaryAmountDisplay
+                        variant="base"
+                        amount={record.amount}
+                        currency={record.currency}
+                        baseCurrency={baseCurrency}
+                        rates={exchangeRates?.rates ?? null}
+                      />
                     </TableCell>
-                    <TableCell>{record.currency}</TableCell>
+                    <TableCell align="right">
+                      <SalaryAmountDisplay
+                        variant="approx"
+                        amount={record.amount}
+                        currency={record.currency}
+                        baseCurrency={baseCurrency}
+                        rates={exchangeRates?.rates ?? null}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -309,6 +402,10 @@ export function EmployeeDetailPage() {
       </SectionCard>
 
       <SectionCard title="Add Salary">
+        <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 2 }}>
+          Currency must be one of the Frankfurter-supported codes from filters ({currencies.length}{" "}
+          ISO codes — same list as reporting currency and insights).
+        </Typography>
         {apiErrors.length > 0 ? (
           <Box sx={{ mb: 2 }}>
             {apiErrors.map((message) => (
@@ -331,26 +428,20 @@ export function EmployeeDetailPage() {
             error={Boolean(formErrors.amount)}
             helperText={formErrors.amount}
           />
-          <FormControl size="small" sx={{ minWidth: 120 }} error={Boolean(formErrors.currency)}>
-            <InputLabel id="salary-currency-label">Currency</InputLabel>
-            <Select
-              labelId="salary-currency-label"
+          <Box>
+            <ReportingCurrencySelect
               label="Currency"
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value)}
-            >
-              {CURRENCIES.map((code) => (
-                <MenuItem key={code} value={code}>
-                  {code}
-                </MenuItem>
-              ))}
-            </Select>
+              value={currency || currencies[0] || ""}
+              options={currencies}
+              onChange={setCurrency}
+              minWidth={140}
+            />
             {formErrors.currency ? (
               <Typography color="error" sx={{ fontSize: "0.75rem", mt: 0.5, mx: 1.75 }}>
                 {formErrors.currency}
               </Typography>
             ) : null}
-          </FormControl>
+          </Box>
           <TextField
             label="Effective Date"
             size="small"

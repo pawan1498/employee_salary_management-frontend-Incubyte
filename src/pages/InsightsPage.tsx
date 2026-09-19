@@ -1,13 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Box,
-  Chip,
-  FormControl,
-  InputLabel,
-  Link,
-  MenuItem,
   Paper,
-  Select,
   Tab,
   Table,
   TableBody,
@@ -18,48 +12,63 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
+import { ApiError } from "../api/api";
 import { getInsights } from "../api/insights";
+import { ActiveFilterReadout } from "../components/ActiveFilterReadout";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
 import { FilterSelect } from "../components/FilterSelect";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
+import { ReportingCurrencySelect } from "../components/ReportingCurrencySelect";
 import { StatCard } from "../components/StatCard";
-import { COUNTRIES, DEPARTMENTS } from "../constants/filters";
-import { formatAmount } from "../format";
-import type { DistributionBucket, Insights } from "../types/insights";
+import { useBaseCurrency } from "../hooks/useBaseCurrency";
+import { useFilters } from "../hooks/useFilters";
+import { formatAmount, formatDate } from "../format";
+import type { Insights } from "../types/insights";
 
-type TabKey = "currency" | "country" | "department" | "ranges";
+type TabKey = "country" | "department" | "ranges";
 
 export function InsightsPage() {
+  const { filters, loading: filtersLoading, error: filtersError } = useFilters();
+  const { baseCurrency, setBaseCurrency, currencies } = useBaseCurrency(filters);
   const [country, setCountry] = useState("");
   const [department, setDepartment] = useState("");
   const [insights, setInsights] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<TabKey>("currency");
-  const [rangeCurrency, setRangeCurrency] = useState("");
-
-  const hasActiveFilters = country !== "" || department !== "";
+  const [activeTab, setActiveTab] = useState<TabKey>("country");
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      if (!baseCurrency) {
+        return;
+      }
+
       setLoading(true);
-      setError(false);
+      setErrorMessage(null);
 
       try {
-        const result = await getInsights({ country, department });
+        const result = await getInsights({
+          country,
+          department,
+          base_currency: baseCurrency,
+        });
         if (!cancelled) {
           setInsights(result.data);
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           setInsights(null);
-          setError(true);
+          if (err instanceof ApiError) {
+            setErrorMessage(err.errors.join(" ") || "Unable to load insights.");
+          } else {
+            setErrorMessage("Unable to load insights.");
+          }
         }
       } finally {
         if (!cancelled) {
@@ -68,80 +77,87 @@ export function InsightsPage() {
       }
     }
 
+    if (filtersLoading || !baseCurrency) {
+      return;
+    }
+
     load();
     return () => {
       cancelled = true;
     };
-  }, [country, department, reloadKey]);
-
-  const distributionCurrencies = useMemo(() => {
-    if (!insights) {
-      return [];
-    }
-    return [...new Set(insights.distribution.map((row) => row.currency))];
-  }, [insights]);
-
-  useEffect(() => {
-    if (distributionCurrencies.length === 0) {
-      setRangeCurrency("");
-      return;
-    }
-    if (!distributionCurrencies.includes(rangeCurrency)) {
-      setRangeCurrency(distributionCurrencies[0]);
-    }
-  }, [distributionCurrencies, rangeCurrency]);
+  }, [country, department, baseCurrency, reloadKey, filtersLoading]);
 
   function clearFilters() {
     setCountry("");
     setDepartment("");
   }
 
+  if (filtersLoading) {
+    return (
+      <Box>
+        <PageHeader
+          title="Insights"
+          subtitle="Compensation totals converted to a reporting currency using ECB exchange rates."
+        />
+        <LoadingState message="Loading filters…" />
+      </Box>
+    );
+  }
+
+  if (filtersError || !filters) {
+    return (
+      <Box>
+        <PageHeader title="Insights" />
+        <ErrorState message="Unable to load filter options." />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <PageHeader
         title="Insights"
-        subtitle="Compensation totals from current salary data. Amounts stay in their native currency — nothing here is converted or added together across currencies."
+        subtitle="Compensation totals converted to a reporting currency using ECB exchange rates. Employee salaries stay in their native currency — conversion happens on the server."
       />
 
       <FilterBar>
-        <FilterSelect label="Country" value={country} options={COUNTRIES} onChange={setCountry} />
+        <ReportingCurrencySelect
+          value={baseCurrency}
+          options={currencies}
+          onChange={setBaseCurrency}
+        />
+        <FilterSelect
+          label="Country"
+          value={country}
+          options={filters.countries}
+          onChange={setCountry}
+        />
         <FilterSelect
           label="Department"
           value={department}
-          options={DEPARTMENTS}
+          options={filters.departments}
           onChange={setDepartment}
         />
       </FilterBar>
 
       <ActiveFilterReadout
-        country={country}
-        department={department}
-        hasActiveFilters={hasActiveFilters}
-        onClearCountry={() => setCountry("")}
-        onClearDepartment={() => setDepartment("")}
-        onClearAll={clearFilters}
+        filters={[
+          ...(country ? [{ label: `Country: ${country}`, onRemove: () => setCountry("") }] : []),
+          ...(department ? [{ label: `Department: ${department}`, onRemove: () => setDepartment("") }] : []),
+        ]}
+        emptyMessage={`Showing all countries and departments in ${baseCurrency}.`}
+        onClearAll={country || department ? clearFilters : undefined}
       />
 
       {loading ? (
         <LoadingState message="Loading insights…" />
-      ) : error ? (
-        <ErrorState
-          message="Unable to load insights."
-          onRetry={() => setReloadKey((key) => key + 1)}
-        />
+      ) : errorMessage ? (
+        <ErrorState message={errorMessage} onRetry={() => setReloadKey((key) => key + 1)} />
       ) : !insights || insights.headcount === 0 ? (
         <EmptyState message="No employees match these filters." />
       ) : (
         <Box aria-live="polite" aria-atomic="true">
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              flexWrap: "wrap",
-              mb: 1,
-              alignItems: "stretch",
-            }}
-          >
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1, alignItems: "stretch" }}>
             <Box sx={{ flex: "0 1 220px" }}>
               <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
               <Typography color="text.secondary" sx={{ fontSize: "0.8rem", mt: 1.5, lineHeight: 1.5 }}>
@@ -149,11 +165,19 @@ export function InsightsPage() {
                 counted here but left out of the breakdowns below.
               </Typography>
             </Box>
-            <CurrencyTotalsPanel rows={insights.by_currency} />
+            <StatCard
+              label={`Total (${insights.base_currency})`}
+              value={formatAmount(insights.total, insights.base_currency)}
+            />
+            <StatCard
+              label={`Average (${insights.base_currency})`}
+              value={formatAmount(insights.average, insights.base_currency)}
+            />
           </Box>
 
           <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 3 }}>
-            Shown separately — currencies are never combined into one total.
+            All amounts below are in {insights.base_currency}, converted on the server. Rates as of{" "}
+            {formatDate(insights.rates_as_of)}.
           </Typography>
 
           <Paper variant="outlined">
@@ -162,44 +186,30 @@ export function InsightsPage() {
               onChange={(_, value: TabKey) => setActiveTab(value)}
               sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}
             >
-              <Tab label="By currency" value="currency" />
               <Tab label="By country" value="country" />
               <Tab label="By department" value="department" />
               <Tab label="Salary ranges" value="ranges" />
             </Tabs>
 
             <Box sx={{ p: 2.5 }}>
-              {activeTab === "currency" && (
-                <BreakdownTable
-                  emptyMessage="No salary data for these filters."
-                  columns={["Currency", "Headcount", "Total", "Average"]}
-                  rows={insights.by_currency.map((row) => ({
-                    key: row.currency,
-                    cells: [
-                      <CurrencyTag key="currency" code={row.currency} />,
-                      row.headcount.toLocaleString(),
-                      formatAmount(row.total, row.currency),
-                      formatAmount(row.average, row.currency),
-                    ],
-                    alignments: ["left", "left", "right", "right"],
-                  }))}
-                />
-              )}
-
               {activeTab === "country" && (
                 <BreakdownTable
                   emptyMessage="No salary data for these filters."
-                  columns={["Country", "Currency", "Headcount", "Total", "Average"]}
+                  columns={[
+                    "Country",
+                    "Headcount",
+                    `Total (${insights.base_currency})`,
+                    `Average (${insights.base_currency})`,
+                  ]}
                   rows={insights.by_country.map((row) => ({
-                    key: `${row.country}-${row.currency}`,
+                    key: row.country,
                     cells: [
                       row.country,
-                      <CurrencyTag key="currency" code={row.currency} />,
                       row.headcount.toLocaleString(),
-                      formatAmount(row.total, row.currency),
-                      formatAmount(row.average, row.currency),
+                      formatAmount(row.total, insights.base_currency),
+                      formatAmount(row.average, insights.base_currency),
                     ],
-                    alignments: ["left", "left", "left", "right", "right"],
+                    alignments: ["left", "left", "right", "right"],
                   }))}
                 />
               )}
@@ -207,17 +217,21 @@ export function InsightsPage() {
               {activeTab === "department" && (
                 <BreakdownTable
                   emptyMessage="No salary data for these filters."
-                  columns={["Department", "Currency", "Headcount", "Total", "Average"]}
+                  columns={[
+                    "Department",
+                    "Headcount",
+                    `Total (${insights.base_currency})`,
+                    `Average (${insights.base_currency})`,
+                  ]}
                   rows={insights.by_department.map((row) => ({
-                    key: `${row.department}-${row.currency}`,
+                    key: row.department,
                     cells: [
                       row.department,
-                      <CurrencyTag key="currency" code={row.currency} />,
                       row.headcount.toLocaleString(),
-                      formatAmount(row.total, row.currency),
-                      formatAmount(row.average, row.currency),
+                      formatAmount(row.total, insights.base_currency),
+                      formatAmount(row.average, insights.base_currency),
                     ],
-                    alignments: ["left", "left", "left", "right", "right"],
+                    alignments: ["left", "left", "right", "right"],
                   }))}
                 />
               )}
@@ -225,154 +239,13 @@ export function InsightsPage() {
               {activeTab === "ranges" && (
                 <SalaryRangesPanel
                   distribution={insights.distribution}
-                  currencies={distributionCurrencies}
-                  selectedCurrency={rangeCurrency}
-                  onCurrencyChange={setRangeCurrency}
+                  baseCurrency={insights.base_currency}
                 />
               )}
             </Box>
           </Paper>
         </Box>
       )}
-    </Box>
-  );
-}
-
-function ActiveFilterReadout({
-  country,
-  department,
-  hasActiveFilters,
-  onClearCountry,
-  onClearDepartment,
-  onClearAll,
-}: {
-  country: string;
-  department: string;
-  hasActiveFilters: boolean;
-  onClearCountry: () => void;
-  onClearDepartment: () => void;
-  onClearAll: () => void;
-}) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        flexWrap: "wrap",
-        mb: 3,
-        minHeight: 32,
-      }}
-    >
-      {!hasActiveFilters ? (
-        <Typography color="text.secondary" sx={{ fontSize: "0.875rem" }}>
-          Showing all countries and departments.
-        </Typography>
-      ) : (
-        <>
-          {country ? (
-            <Chip label={`Country: ${country}`} size="small" onDelete={onClearCountry} />
-          ) : null}
-          {department ? (
-            <Chip label={`Department: ${department}`} size="small" onDelete={onClearDepartment} />
-          ) : null}
-          <Link
-            component="button"
-            type="button"
-            onClick={onClearAll}
-            sx={{ fontSize: "0.875rem", ml: 0.5 }}
-          >
-            Clear filters
-          </Link>
-        </>
-      )}
-    </Box>
-  );
-}
-
-function CurrencyTotalsPanel({
-  rows,
-}: {
-  rows: Insights["by_currency"];
-}) {
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 2.5,
-        flex: "1 1 320px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5,
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: "0.72rem",
-          fontWeight: 700,
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          color: "text.secondary",
-        }}
-      >
-        Totals by currency
-      </Typography>
-      {rows.length === 0 ? (
-        <Typography color="text.secondary" sx={{ fontSize: "0.875rem" }}>
-          No salary data for these filters.
-        </Typography>
-      ) : (
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-          {rows.map((row) => (
-            <Box
-              key={row.currency}
-              sx={{
-                px: 2,
-                py: 1.25,
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                bgcolor: "background.paper",
-                minWidth: 140,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  color: "text.secondary",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {row.currency}
-              </Typography>
-              <Typography sx={{ fontWeight: 650, mt: 0.25, fontVariantNumeric: "tabular-nums" }}>
-                {formatAmount(row.total, row.currency)}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-    </Paper>
-  );
-}
-
-function CurrencyTag({ code }: { code: string }) {
-  return (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-block",
-        px: 1,
-        py: 0.25,
-        borderRadius: 1,
-        bgcolor: "grey.100",
-        fontSize: "0.8rem",
-        fontWeight: 600,
-        letterSpacing: "0.03em",
-      }}
-    >
-      {code}
     </Box>
   );
 }
@@ -430,83 +303,57 @@ function BreakdownTable({
 
 function SalaryRangesPanel({
   distribution,
-  currencies,
-  selectedCurrency,
-  onCurrencyChange,
+  baseCurrency,
 }: {
-  distribution: DistributionBucket[];
-  currencies: string[];
-  selectedCurrency: string;
-  onCurrencyChange: (currency: string) => void;
+  distribution: Insights["distribution"];
+  baseCurrency: string;
 }) {
-  const rows = distribution.filter((row) => row.currency === selectedCurrency);
-  const totalHeadcount = rows.reduce((sum, row) => sum + row.headcount, 0);
-  const dominantBucket = rows.reduce(
+  const totalHeadcount = distribution.reduce((sum, row) => sum + row.headcount, 0);
+  const dominantBucket = distribution.reduce(
     (max, row) => (row.headcount > max.headcount ? row : max),
-    rows[0] ?? { bucket: "", headcount: 0 },
+    distribution[0] ?? { bucket: "", headcount: 0 },
   );
   const showDominantNote =
     totalHeadcount > 0 && dominantBucket.headcount / totalHeadcount > 0.9;
 
-  if (currencies.length === 0) {
+  if (distribution.length === 0) {
     return <EmptyState message="No salary range data for these filters." />;
   }
 
   return (
     <Box>
       <Typography color="text.secondary" sx={{ fontSize: "0.875rem", mb: 2 }}>
-        How many employees fall into fixed salary ranges, shown one currency at a time. Ranges use
-        each currency&apos;s native amounts — they are not converted or combined.
+        How many employees fall into fixed salary ranges in {baseCurrency}, after conversion on the
+        server.
       </Typography>
 
-      <FormControl size="small" sx={{ minWidth: 160, mb: 2 }}>
-        <InputLabel id="range-currency-label">Currency</InputLabel>
-        <Select
-          labelId="range-currency-label"
-          label="Currency"
-          value={selectedCurrency}
-          onChange={(event) => onCurrencyChange(event.target.value)}
-        >
-          {currencies.map((currency) => (
-            <MenuItem key={currency} value={currency}>
-              {currency}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      {showDominantNote ? (
+        <Typography color="text.secondary" sx={{ fontSize: "0.875rem", mb: 2 }}>
+          Most employees fall in one range — fixed absolute ranges may not reflect typical salaries
+          in {baseCurrency}.
+        </Typography>
+      ) : null}
 
-      {rows.length === 0 ? (
-        <EmptyState message={`No salary range data for ${selectedCurrency}.`} />
-      ) : (
-        <>
-          {showDominantNote ? (
-            <Typography color="text.secondary" sx={{ fontSize: "0.875rem", mb: 2 }}>
-              Most employees fall in one range — fixed absolute ranges may not reflect typical
-              salaries in {selectedCurrency}.
-            </Typography>
-          ) : null}
-          <TableContainer sx={{ overflowX: "auto" }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Range</TableCell>
-                  <TableCell align="right">Headcount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={`${row.currency}-${row.bucket}`} hover>
-                    <TableCell>{row.bucket}</TableCell>
-                    <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
-                      {row.headcount.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </>
-      )}
+      <TableContainer sx={{ overflowX: "auto" }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Range ({baseCurrency})</TableCell>
+              <TableCell align="right">Headcount</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {distribution.map((row) => (
+              <TableRow key={row.bucket} hover>
+                <TableCell>{row.bucket}</TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {row.headcount.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 }

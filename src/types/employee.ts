@@ -31,6 +31,7 @@ export type EmployeeListParams = {
   q?: string;
   country?: string;
   department?: string;
+  role?: string;
   page?: number;
   per_page?: number;
 };

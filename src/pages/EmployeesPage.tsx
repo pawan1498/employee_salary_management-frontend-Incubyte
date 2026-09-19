@@ -15,24 +15,34 @@ import {
   Typography,
 } from "@mui/material";
 import { getEmployees } from "../api/employees";
+import { ActiveFilterReadout } from "../components/ActiveFilterReadout";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { FilterBar } from "../components/FilterBar";
 import { FilterSelect } from "../components/FilterSelect";
-import { COUNTRIES, DEPARTMENTS } from "../constants/filters";
 import { LoadingState } from "../components/LoadingState";
+import { NativeCurrencyNote } from "../components/NativeCurrencyNote";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { formatAmount } from "../format";
+import { ReportingCurrencySelect } from "../components/ReportingCurrencySelect";
+import { SalaryAmountDisplay } from "../components/SalaryAmountDisplay";
+import { useBaseCurrency } from "../hooks/useBaseCurrency";
+import { useExchangeRates } from "../hooks/useExchangeRates";
+import { useFilters } from "../hooks/useFilters";
 import type { EmployeeListResponse } from "../types/employee";
 
 const PER_PAGE = 25;
 
 export function EmployeesPage() {
+  const { filters, loading: filtersLoading, error: filtersError } = useFilters();
+  const { baseCurrency, setBaseCurrency, currencies } = useBaseCurrency(filters);
+  const { rates: exchangeRates, loading: ratesLoading, error: ratesError, retry: retryRates } =
+    useExchangeRates(baseCurrency);
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
   const [country, setCountry] = useState("");
   const [department, setDepartment] = useState("");
+  const [role, setRole] = useState("");
   const [page, setPage] = useState(1);
   const [response, setResponse] = useState<EmployeeListResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +59,10 @@ export function EmployeesPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    if (filtersLoading) {
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
@@ -60,6 +74,7 @@ export function EmployeesPage() {
           q,
           country,
           department,
+          role,
           page,
           per_page: PER_PAGE,
         });
@@ -82,11 +97,40 @@ export function EmployeesPage() {
     return () => {
       cancelled = true;
     };
-  }, [q, country, department, page, reloadKey]);
+  }, [q, country, department, role, page, reloadKey, filtersLoading]);
 
   function handleFilterChange(setter: (value: string) => void, value: string) {
     setter(value);
     setPage(1);
+  }
+
+  function clearFilters() {
+    setCountry("");
+    setDepartment("");
+    setRole("");
+    setSearchInput("");
+    setQ("");
+    setPage(1);
+  }
+
+  const hasActiveFilters = country !== "" || department !== "" || role !== "" || q !== "";
+
+  if (filtersLoading) {
+    return (
+      <Box>
+        <PageHeader title="Employees" subtitle="Search and filter the directory." />
+        <LoadingState message="Loading filters…" />
+      </Box>
+    );
+  }
+
+  if (filtersError || !filters) {
+    return (
+      <Box>
+        <PageHeader title="Employees" />
+        <ErrorState message="Unable to load filter options." />
+      </Box>
+    );
   }
 
   return (
@@ -105,7 +149,14 @@ export function EmployeesPage() {
         }
       />
 
+      <NativeCurrencyNote baseCurrency={baseCurrency} ratesAsOf={exchangeRates?.rates_as_of} />
+
       <FilterBar>
+        <ReportingCurrencySelect
+          value={baseCurrency}
+          options={currencies}
+          onChange={setBaseCurrency}
+        />
         <TextField
           label="Search"
           size="small"
@@ -117,18 +168,37 @@ export function EmployeesPage() {
         <FilterSelect
           label="Country"
           value={country}
-          options={COUNTRIES}
+          options={filters.countries}
           onChange={(value) => handleFilterChange(setCountry, value)}
         />
         <FilterSelect
           label="Department"
           value={department}
-          options={DEPARTMENTS}
+          options={filters.departments}
           onChange={(value) => handleFilterChange(setDepartment, value)}
+        />
+        <FilterSelect
+          label="Role"
+          value={role}
+          options={filters.roles}
+          onChange={(value) => handleFilterChange(setRole, value)}
         />
       </FilterBar>
 
-      {loading ? (
+      <ActiveFilterReadout
+        filters={[
+          ...(q ? [{ label: `Search: ${q}`, onRemove: () => { setSearchInput(""); setQ(""); setPage(1); } }] : []),
+          ...(country ? [{ label: `Country: ${country}`, onRemove: () => { setCountry(""); setPage(1); } }] : []),
+          ...(department ? [{ label: `Department: ${department}`, onRemove: () => { setDepartment(""); setPage(1); } }] : []),
+          ...(role ? [{ label: `Role: ${role}`, onRemove: () => { setRole(""); setPage(1); } }] : []),
+        ]}
+        emptyMessage="Showing all employees."
+        onClearAll={hasActiveFilters ? clearFilters : undefined}
+      />
+
+      {ratesError ? (
+        <ErrorState message={ratesError} onRetry={retryRates} />
+      ) : loading || ratesLoading || !baseCurrency ? (
         <LoadingState message="Loading employees…" />
       ) : error ? (
         <ErrorState
@@ -148,7 +218,8 @@ export function EmployeesPage() {
                   <TableCell>Department</TableCell>
                   <TableCell>Country</TableCell>
                   <TableCell>Role</TableCell>
-                  <TableCell align="right">Current Salary</TableCell>
+                  <TableCell align="right">Base pay</TableCell>
+                  <TableCell align="right">Approx. ({baseCurrency})</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -167,14 +238,30 @@ export function EmployeesPage() {
                     <TableCell>{employee.department}</TableCell>
                     <TableCell>{employee.country}</TableCell>
                     <TableCell>{employee.role}</TableCell>
-                    <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell align="right">
                       {employee.current_salary ? (
-                        <Typography component="span" sx={{ fontWeight: 600 }}>
-                          {formatAmount(
-                            employee.current_salary.amount,
-                            employee.current_salary.currency,
-                          )}
+                        <SalaryAmountDisplay
+                          variant="base"
+                          amount={employee.current_salary.amount}
+                          currency={employee.current_salary.currency}
+                          baseCurrency={baseCurrency}
+                          rates={exchangeRates?.rates ?? null}
+                        />
+                      ) : (
+                        <Typography component="span" color="text.secondary">
+                          —
                         </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {employee.current_salary ? (
+                        <SalaryAmountDisplay
+                          variant="approx"
+                          amount={employee.current_salary.amount}
+                          currency={employee.current_salary.currency}
+                          baseCurrency={baseCurrency}
+                          rates={exchangeRates?.rates ?? null}
+                        />
                       ) : (
                         <Typography component="span" color="text.secondary">
                           —
