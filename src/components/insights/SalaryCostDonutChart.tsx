@@ -19,6 +19,9 @@ type SalaryCostDonutChartProps = {
   slices: SalaryCostSlice[];
   loading?: boolean;
   embedded?: boolean;
+  valueKind?: "money" | "headcount";
+  sortSlices?: boolean;
+  centerSubtitle?: string;
 };
 
 const CX = 100;
@@ -37,7 +40,23 @@ export function SalaryCostDonutChart({
   slices: inputSlices,
   loading = false,
   embedded = false,
+  valueKind = "money",
+  sortSlices = true,
+  centerSubtitle = "reporting",
 }: SalaryCostDonutChartProps) {
+  function formatSliceValue(value: number): string {
+    if (valueKind === "headcount") {
+      return value.toLocaleString();
+    }
+    return formatAmount(String(value), reportingCurrency);
+  }
+
+  function formatTooltipDetail(value: number): string {
+    if (valueKind === "headcount") {
+      return `${value.toLocaleString()} employees`;
+    }
+    return formatAmount(String(value), reportingCurrency);
+  }
   if (loading) {
     const loadingContent = (
       <>
@@ -69,8 +88,11 @@ export function SalaryCostDonutChart({
       value: Number(row.value),
       rawValue: row.value,
     }))
-    .filter((row) => !Number.isNaN(row.value) && row.value > 0)
-    .sort((a, b) => b.value - a.value);
+    .filter((row) => !Number.isNaN(row.value) && row.value > 0);
+
+  if (sortSlices) {
+    slices.sort((a, b) => b.value - a.value);
+  }
 
   if (slices.length === 0) {
     const emptyContent = (
@@ -158,9 +180,7 @@ export function SalaryCostDonutChart({
                 title={
                   <Box sx={{ p: 0.25 }}>
                     <Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }}>{slice.label}</Typography>
-                    <Typography sx={{ fontSize: "0.8rem" }}>
-                      {formatAmount(String(slice.value), reportingCurrency)}
-                    </Typography>
+                    <Typography sx={{ fontSize: "0.8rem" }}>{formatTooltipDetail(slice.value)}</Typography>
                     <Typography sx={{ fontSize: "0.8rem" }}>{percentage.toFixed(1)}% of total</Typography>
                   </Box>
                 }
@@ -177,7 +197,7 @@ export function SalaryCostDonutChart({
             {reportingCurrency}
           </text>
           <text x={CX} y={CY + 12} textAnchor="middle" fill="#94a3b8" fontSize="10">
-            reporting
+            {centerSubtitle}
           </text>
         </Box>
 
@@ -225,7 +245,7 @@ export function SalaryCostDonutChart({
                   component="span"
                   sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                 >
-                  {formatAmount(String(slice.value), reportingCurrency)}
+                  {formatSliceValue(slice.value)}
                 </Typography>
                 <Typography
                   component="span"

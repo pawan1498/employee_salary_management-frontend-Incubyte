@@ -23,6 +23,7 @@ import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { SalaryCostByCountryChart } from "../components/insights/SalaryCostByCountryChart";
 import { SalaryCostByDepartmentChart } from "../components/insights/SalaryCostByDepartmentChart";
+import { SalaryRangeDistributionChart } from "../components/insights/SalaryRangeDistributionChart";
 import { ReportingCurrencySelect } from "../components/ReportingCurrencySelect";
 import { StatCard } from "../components/StatCard";
 import { useBaseCurrency } from "../hooks/useBaseCurrency";
@@ -357,6 +358,8 @@ function SalaryRangesPanel({
           in {baseCurrency}.
         </Typography>
       ) : null}
+
+      <SalaryRangeDistributionChart embedded baseCurrency={baseCurrency} distribution={distribution} />
 
       <TableContainer sx={{ overflowX: "auto" }}>
         <Table>
