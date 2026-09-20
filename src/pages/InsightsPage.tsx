@@ -143,14 +143,18 @@ export function InsightsPage() {
         />
       </FilterBar>
 
-      <ActiveFilterReadout
-        filters={[
-          ...(country ? [{ label: `Country: ${country}`, onRemove: () => setCountry("") }] : []),
-          ...(department ? [{ label: `Department: ${department}`, onRemove: () => setDepartment("") }] : []),
-        ]}
-        emptyMessage={`Showing all employees. Amounts shown in ${baseCurrency}.`}
-        onClearAll={country || department ? clearFilters : undefined}
-      />
+      {country || department ? (
+        <ActiveFilterReadout
+          filters={[
+            ...(country ? [{ label: `Country: ${country}`, onRemove: () => setCountry("") }] : []),
+            ...(department
+              ? [{ label: `Department: ${department}`, onRemove: () => setDepartment("") }]
+              : []),
+          ]}
+          emptyMessage=""
+          onClearAll={clearFilters}
+        />
+      ) : null}
 
       {loading ? (
         <LoadingState message="Loading insights…" />
@@ -163,19 +167,13 @@ export function InsightsPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+              gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, minmax(0, 1fr))" },
               gap: 2,
-              mb: 1,
+              mb: 2,
               alignItems: "stretch",
             }}
           >
-            <Box sx={{ gridColumn: { xs: "1 / -1", md: "auto" } }}>
-              <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
-              <Typography color="text.secondary" sx={{ fontSize: "0.8rem", mt: 1.5, lineHeight: 1.5 }}>
-                Everyone matching your filters. People without a salary on file are counted here but
-                not included in the pay charts and tables below.
-              </Typography>
-            </Box>
+            <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
             <StatCard
               label={`Total (${insights.base_currency})`}
               value={formatAmount(insights.total, insights.base_currency)}
@@ -190,10 +188,16 @@ export function InsightsPage() {
             />
           </Box>
 
-          <Typography color="text.secondary" sx={{ fontSize: "0.85rem", mb: 3 }}>
-            All amounts below are shown in {insights.base_currency}. Exchange rates updated{" "}
-            {formatDate(insights.rates_as_of)}.
-          </Typography>
+          <Box sx={{ mb: 3, display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography color="text.secondary" sx={{ fontSize: "0.85rem", lineHeight: 1.6 }}>
+              Headcount includes everyone matching your filters. People without a salary on file are
+              counted in headcount but not included in the pay charts and tables below.
+            </Typography>
+            <Typography color="text.secondary" sx={{ fontSize: "0.85rem", lineHeight: 1.6 }}>
+              All amounts below are shown in {insights.base_currency}. Exchange rates updated{" "}
+              {formatDate(insights.rates_as_of)}.
+            </Typography>
+          </Box>
 
           <Paper variant="outlined">
             <Tabs

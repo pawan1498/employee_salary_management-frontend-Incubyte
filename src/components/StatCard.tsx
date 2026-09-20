@@ -6,6 +6,9 @@ type StatCardProps = {
 };
 
 export function StatCard({ label, value }: StatCardProps) {
+  const valueText = String(value);
+  const isLongValue = valueText.length > 11;
+
   return (
     <Paper
       variant="outlined"
@@ -13,6 +16,7 @@ export function StatCard({ label, value }: StatCardProps) {
         p: { xs: 2, sm: 2.5 },
         minWidth: 0,
         height: "100%",
+        overflow: "hidden",
         borderLeft: "4px solid",
         borderLeftColor: "primary.main",
         background:
@@ -30,7 +34,18 @@ export function StatCard({ label, value }: StatCardProps) {
       >
         {label}
       </Typography>
-      <Typography variant="h4" sx={{ mt: 1, fontSize: { xs: "1.35rem", sm: "2.125rem" } }}>
+      <Typography
+        variant="h4"
+        sx={{
+          mt: 1,
+          lineHeight: 1.15,
+          fontVariantNumeric: "tabular-nums",
+          overflowWrap: "anywhere",
+          fontSize: isLongValue
+            ? { xs: "1.1rem", sm: "1.35rem", md: "1.5rem" }
+            : { xs: "1.35rem", sm: "1.75rem", md: "2.125rem" },
+        }}
+      >
         {value}
       </Typography>
     </Paper>
