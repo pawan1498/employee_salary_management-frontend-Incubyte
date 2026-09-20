@@ -10,9 +10,9 @@ export function StatCard({ label, value }: StatCardProps) {
     <Paper
       variant="outlined"
       sx={{
-        p: 2.5,
-        minWidth: 200,
-        flex: "1 1 200px",
+        p: { xs: 2, sm: 2.5 },
+        minWidth: 0,
+        height: "100%",
         borderLeft: "4px solid",
         borderLeftColor: "primary.main",
         background:
@@ -30,7 +30,7 @@ export function StatCard({ label, value }: StatCardProps) {
       >
         {label}
       </Typography>
-      <Typography variant="h4" sx={{ mt: 1 }}>
+      <Typography variant="h4" sx={{ mt: 1, fontSize: { xs: "1.35rem", sm: "2.125rem" } }}>
         {value}
       </Typography>
     </Paper>

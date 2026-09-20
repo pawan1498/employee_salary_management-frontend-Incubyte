@@ -160,8 +160,16 @@ export function InsightsPage() {
         <EmptyState message="No employees match these filters." />
       ) : (
         <Box aria-live="polite" aria-atomic="true">
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1, alignItems: "stretch" }}>
-            <Box sx={{ flex: "0 1 220px" }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+              gap: 2,
+              mb: 1,
+              alignItems: "stretch",
+            }}
+          >
+            <Box sx={{ gridColumn: { xs: "1 / -1", md: "auto" } }}>
               <StatCard label="Headcount" value={insights.headcount.toLocaleString()} />
               <Typography color="text.secondary" sx={{ fontSize: "0.8rem", mt: 1.5, lineHeight: 1.5 }}>
                 Everyone matching your filters. People without a salary on file are counted here but
@@ -191,14 +199,26 @@ export function InsightsPage() {
             <Tabs
               value={activeTab}
               onChange={(_, value: TabKey) => setActiveTab(value)}
-              sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              sx={{
+                px: { xs: 1, sm: 2 },
+                borderBottom: 1,
+                borderColor: "divider",
+                "& .MuiTab-root": {
+                  minHeight: 48,
+                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                  px: { xs: 1.5, sm: 2 },
+                },
+              }}
             >
               <Tab label="By country" value="country" />
               <Tab label="By department" value="department" />
               <Tab label="Salary ranges" value="ranges" />
             </Tabs>
 
-            <Box sx={{ p: 2.5 }}>
+            <Box sx={{ p: { xs: 1.5, sm: 2.5 } }}>
               {activeTab === "country" && (
                 <Box>
                   <SalaryCostByCountryChart

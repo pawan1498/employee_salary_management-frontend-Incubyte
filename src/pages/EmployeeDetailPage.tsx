@@ -249,7 +249,7 @@ export function EmployeeDetailPage() {
         ← Back to employees
       </Link>
 
-      <Typography variant="h4" sx={{ mb: 0.5 }}>
+      <Typography variant="h4" sx={{ mb: 0.5, fontSize: { xs: "1.5rem", sm: "1.75rem" } }}>
         {employee.name}
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 1 }}>
@@ -417,7 +417,13 @@ export function EmployeeDetailPage() {
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "flex-start" }}
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            "& > *": { flex: { xs: "1 1 100%", sm: "0 1 auto" }, minWidth: { xs: 0, sm: "auto" } },
+          }}
         >
           <TextField
             label="Amount"
@@ -426,6 +432,7 @@ export function EmployeeDetailPage() {
             onChange={(event) => setAmount(event.target.value)}
             error={Boolean(formErrors.amount)}
             helperText={formErrors.amount}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           />
           <Box>
             <ReportingCurrencySelect
@@ -450,8 +457,14 @@ export function EmployeeDetailPage() {
             error={Boolean(formErrors.effective_date)}
             helperText={formErrors.effective_date}
             slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           />
-          <Button type="submit" variant="contained" disabled={submitting || refreshing}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={submitting || refreshing}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
             {submitting ? "Saving…" : "Add salary"}
           </Button>
         </Box>

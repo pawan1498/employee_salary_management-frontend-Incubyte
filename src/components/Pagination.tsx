@@ -17,19 +17,19 @@ export function Pagination({ page, perPage, total, onPageChange }: PaginationPro
       variant="outlined"
       sx={{
         display: "flex",
-        alignItems: "center",
+        flexDirection: { xs: "column", sm: "row" },
+        alignItems: { xs: "stretch", sm: "center" },
         justifyContent: "space-between",
         gap: 2,
         mt: 2.5,
-        px: 2,
+        px: { xs: 1.5, sm: 2 },
         py: 1.5,
-        flexWrap: "wrap",
       }}
     >
-      <Typography color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+      <Typography color="text.secondary" sx={{ fontSize: "0.875rem", textAlign: { xs: "center", sm: "left" } }}>
         Showing {start.toLocaleString()}–{end.toLocaleString()} of {total.toLocaleString()}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5 }}>
         <Button variant="outlined" size="small" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
           Previous
         </Button>

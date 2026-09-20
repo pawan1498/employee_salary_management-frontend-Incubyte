@@ -144,6 +144,10 @@ export const theme = createTheme({
           textTransform: "uppercase",
           borderBottomColor: "#e2e8f0",
           whiteSpace: "nowrap",
+          "@media (max-width: 899.95px)": {
+            fontSize: "0.68rem",
+            paddingInline: 12,
+          },
         },
         body: {
           fontSize: "0.9rem",

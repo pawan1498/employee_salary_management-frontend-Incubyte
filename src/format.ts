@@ -1,18 +1,27 @@
+const CURRENCY_LOCALES: Record<string, string> = {
+  INR: "en-IN",
+};
+
+function localeForCurrency(currency: string): string | undefined {
+  return CURRENCY_LOCALES[currency.toUpperCase()];
+}
+
 function formatCurrencyAmount(amount: string, currency: string): string {
   const value = Number(amount);
+  const normalizedCurrency = currency.toUpperCase();
 
   if (Number.isNaN(value)) {
     return amount;
   }
 
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(localeForCurrency(normalizedCurrency), {
       style: "currency",
-      currency,
+      currency: normalizedCurrency,
       maximumFractionDigits: 0,
     }).format(value);
   } catch {
-    return value.toLocaleString();
+    return value.toLocaleString(localeForCurrency(normalizedCurrency));
   }
 }
 

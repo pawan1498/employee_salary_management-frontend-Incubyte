@@ -23,7 +23,7 @@ export function ReportingCurrencySelect({
       onChange={(_, next) => onChange(next)}
       disableClearable
       autoHighlight
-      sx={{ minWidth }}
+      sx={{ minWidth: { xs: "100%", sm: minWidth }, width: { xs: "100%", sm: "auto" } }}
       renderInput={(params) => <TextField {...params} label={label} />}
     />
   );

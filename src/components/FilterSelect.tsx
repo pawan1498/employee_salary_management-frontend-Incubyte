@@ -16,7 +16,13 @@ export function FilterSelect({
   minWidth = 200,
 }: FilterSelectProps) {
   return (
-    <FormControl size="small" sx={{ minWidth }}>
+    <FormControl
+      size="small"
+      sx={{
+        minWidth: { xs: "100%", sm: minWidth },
+        width: { xs: "100%", sm: "auto" },
+      }}
+    >
       <InputLabel>{label}</InputLabel>
       <Select label={label} value={value} onChange={(event) => onChange(event.target.value)}>
         <MenuItem value="">All</MenuItem>
